@@ -391,61 +391,50 @@ def threat_server():
             subprocess.Popen("cp /var/artillery/banlist.txt %s" % (public_http), shell=True).wait()
             time.sleep(800)
 
-# send the message then if its local or remote
 def syslog(message):
+    import socket
+    FACILITY = {
+            'kern': 0, 'user': 1, 'mail': 2, 'daemon': 3,
+            'auth': 4, 'syslog': 5, 'lpr': 6, 'news': 7,
+            'uucp': 8, 'cron': 9, 'authpriv': 10, 'ftp': 11,
+            'local0': 16, 'local1': 17, 'local2': 18, 'local3': 19,
+            'local4': 20, 'local5': 21, 'local6': 22, 'local7': 23,
+            }
 
-    type = check_config("SYSLOG_TYPE=").lower()
-
-    # if we are sending remote syslog
-    if type == "remote":
-
-        import socket
-        FACILITY = {
-                'kern': 0, 'user': 1, 'mail': 2, 'daemon': 3,
-                'auth': 4, 'syslog': 5, 'lpr': 6, 'news': 7,
-                'uucp': 8, 'cron': 9, 'authpriv': 10, 'ftp': 11,
-                'local0': 16, 'local1': 17, 'local2': 18, 'local3': 19,
-                'local4': 20, 'local5': 21, 'local6': 22, 'local7': 23,
-                }
-
-        LEVEL = {
-                'emerg': 0, 'alert':1, 'crit': 2, 'err': 3,
-                'warning': 4, 'notice': 5, 'info': 6, 'debug': 7
-                }
+    LEVEL = {
+            'emerg': 0, 'alert':1, 'crit': 2, 'err': 3,
+            'warning': 4, 'notice': 5, 'info': 6, 'debug': 7
+            }
 
 
-        def syslog_send(message, level=LEVEL['notice'], facility=FACILITY['daemon'],
-                host='localhost', port=514):
+    def syslog_send(message, level=LEVEL['notice'], facility=FACILITY['daemon'],
+            host='localhost', port=514):
 
-            # Send syslog UDP packet to given host and port.
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        data = '<%d>%s' % (level + facility*8, message + "\n")
+        sock.sendto(data, (host, port))
+        sock.close()
 
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            data = '<%d>%s' % (level + facility*8, message + "\n")
-            sock.sendto(data, (host, port))
-            sock.close()
+    remote_syslog = check_config("LOG_REMOTE_HOST=")
+    syslog_send(message, host=remote_syslog)
 
-        # send the syslog message
-        remote_syslog = check_config("SYSLOG_REMOTE_HOST=")
-        syslog_send(message, host=remote_syslog)
-
-    # if we are sending local syslog messages
-    if type == "local":
-        my_logger = logging.getLogger('Artillery')
-        my_logger.setLevel(logging.DEBUG)
-        handler = logging.handlers.SysLogHandler(address = '/dev/log')
-        my_logger.addHandler(handler)
-    for line in message.splitlines():
-        my_logger.critical(line + "\n")
-
-# write log
 def write_log(alert):
-    # check os
     operating_system = check_os()
-    # if we are running nix
-    if operating_system == "posix":
-        syslog(alert)
 
-    # if os is windows
+    if operating_system == "posix":
+        type = check_config("LOG_TYPE=").lower()
+
+        if type == "remote":
+            syslog(alert)
+        if type == "local":
+            if not os.path.isfile("/var/artillery/logs/alerts.log"):
+                filewrite = file("/var/artillery/logs/alerts.log", "w")
+                filewrite.write("***** Artillery Alerts Log *****\n")
+                filewrite.close()
+            filewrite = file("/var/artillery/logs/alerts.log", "a")
+            filewrite.write(alert+"\n")
+            filewrite.close()
+
     if operating_system == "windows":
         # expand program files
         program_files = os.environ["ProgramFiles"]
