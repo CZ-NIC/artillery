@@ -19,6 +19,10 @@ ssh_attempts = check_config("SSH_BRUTE_ATTEMPTS=")
 # check for whitelist
 def ssh_monitor(monitor_time):
     while 1:
+        # for Debian
+        if os.path.isfile("/var/log/faillog"):
+            fileopen1 = file("/var/log/faillog", "r")
+
         # for debian base
         if os.path.isfile("/var/log/auth.log"):
             fileopen1 = file("/var/log/auth.log", "r")
@@ -30,10 +34,6 @@ def ssh_monitor(monitor_time):
         # for centOS
         if os.path.isfile("/var/log/secure"):
             fileopen1 = file("/var/log/secure", "r")
-
-        # for Debian
-        if os.path.isfile("/var/log/faillog"):
-            fileopen1 = file("/var/log/faillog", "r")
 
         if not os.path.isfile("/var/artillery/banlist.txt"):
             # create a blank file
@@ -51,13 +51,13 @@ def ssh_monitor(monitor_time):
                 fileopen2 = file("/var/artillery/banlist.txt", "r")
                 line = line.rstrip()
                 # search for bad ssh
-                match = re.search("Failed password for", line)
+                match = re.search("(error: PAM|Invalid user )", line)
                 if match:
                     ssh_counter = ssh_counter + 1
                     # split based on spaces
                     line = line.split(" ")
                     # pull ipaddress
-                    ipaddress = line[10]
+                    ipaddress = line[-1]
                     ip_check = is_valid_ipv4(ipaddress)
                     if ip_check != False:
 
