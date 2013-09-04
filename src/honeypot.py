@@ -113,22 +113,6 @@ def listen_server(port,bind_interface):
 
 # check to see which ports we are using and ban if ports are touched
 def main(ports,bind_interface):
-
-        # pull the banlist path
-    if os.path.isfile("check_banlist_path"):
-        banlist_path = check_banlist_path()
-        fileopen = file(banlist_path, "r")
-        for line in fileopen:
-        # remove any bogus characters
-            line = line.rstrip()
-            # ban actual IP addresses
-            honeypot_ban = check_config("HONEYPOT_BAN=")
-            if honeypot_ban.lower() == "yes":
-                whitelist = check_config("WHITELIST_IP=")
-                match = re.search(line, whitelist)
-                if not match:
-                        # ban the ipaddress
-                    ban(line)
     # split into tuple
     ports = ports.split(",")
     for port in ports:
