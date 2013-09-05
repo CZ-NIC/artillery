@@ -9,54 +9,46 @@ from src.core import *
 from src.smtp import *
 
 send_email = check_config("ALERT_USER_EMAIL=")
+exclude = check_config("EXCLUDE=")
+excluding = exclude != ""
+exclude_dirs = exclude.split(",")
+
+def exclude_check(file):
+    if excluding:
+        for exclude_dir in exclude_dirs:
+            match = re.search(exclude_dir, file)
+
+            if match:
+                return 0
+
+    return 1
 
 def monitor_system(time_wait):
     # total_compare is a tally of all sha512 hashes
     total_compare = ""
-    # what files we need to monitor
     check_folders = check_config("MONITOR_FOLDERS=")
-    # split lines
-    exclude_counter = 0
     check_folders = check_folders.replace('"', "")
     check_folders = check_folders.replace("MONITOR_FOLDERS=", "")
     check_folders = check_folders.rstrip()
     check_folders = check_folders.split(",")
-    # cycle through tuple
+
     for directory in check_folders:
         time.sleep(0.1)
-        exclude_counter = 0
         # we need to check to see if the directory is there first, you never know
         if os.path.isdir(directory):
-            # check to see if theres an include
-            exclude_check = check_config("EXCLUDE=")
-            match = re.search(exclude_check, directory)
-            # if we hit a match then we need to exclude
-            if match:
-                if exclude_check != "":
-                    exclude_counter = 1
-            # do a try block in case empty
-            # if we didn't trigger exclude
-            if exclude_counter == 0:
-                # this will pull a list of files and associated folders
+            if exclude_check(directory):
                 for path, subdirs, files in os.walk(directory):
                     for name in files:
-                        exclude_counter = 0
                         filename = os.path.join(path, name)
-                        # check for exclusion
-                        match = re.search(exclude_check, filename)
-                        if match:
-                            if exclude_check != "":
-                                exclude_counter = 1
-                        if exclude_counter == 0:
-                            # some system protected files may not show up, so we check here
+
+                        if exclude_check(filename):
                             if os.path.isfile(filename):
                                 try:
                                     fileopen = file(filename, "rb")
-                                    # read in the data
                                     data = fileopen.read()
 
                                 except: pass
-                                # hash it with sha512
+
                                 hash = hashlib.sha512()
                                 try:
                                     hash.update(data)
@@ -127,7 +119,7 @@ def monitor_system(time_wait):
 def start_monitor():
     # check if we want to monitor files
     monitor_check = check_config("MONITOR=")
-    if monitor_check.lower() == "yes":
+    if monitor_check.lower() == "on":
         # start the monitoring
         time_wait = check_config("MONITOR_FREQUENCY=")
 

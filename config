@@ -12,7 +12,7 @@
 #############################################################################################
 #
 # DETERMINE IF YOU WANT TO MONITOR OR NOT
-MONITOR=YES
+MONITOR=ON
 #
 # THESE ARE THE FOLDERS TO MONITOR, TO ADD MORE, JUST DO "/root","/var/", etc.
 MONITOR_FOLDERS="/var/www","/etc/"
