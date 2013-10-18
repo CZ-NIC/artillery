@@ -90,17 +90,9 @@ if answer.lower() == "y" or answer.lower() == "yes":
 
     # copy the files
     if operating_system == "posix":
-        choice = raw_input("Do you want to keep Artillery updated? (requires internet) [y/n]: ")
-        if choice == "y" or choice == "yes":
-            print "[*] Checking out Artillery through subversion to /var/artillery"
-            # if old files are there
-            if os.path.isdir("/var/artillery/"):
-                shutil.rmtree('/var/artillery')
-            subprocess.Popen("git clone https://github.com/katkad/artillery /var/artillery/", shell=True).wait()
-            print "[*] Finished. If you want to update Artillery go to /var/artillery and type 'git pull'"
-        else:
-            print "[*] Copying setup files over..."
-            subprocess.Popen("cp -rf * /var/artillery/", shell=True).wait()
+        print "[*] Copying files ..."
+        subprocess.Popen("cp -r ./ /var/artillery/", shell=True).wait()
+        print "[*] Finished. If you want to update Artillery go to /var/artillery and type 'git pull'"
 
         # if os is Mac Os X than create a .plist daemon - changes added by contributor - Giulio Bortot
         if os.path.isdir("/Library/LaunchDaemons"):
